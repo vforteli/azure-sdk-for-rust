@@ -252,6 +252,12 @@ pub fn get_svc_readmes() -> Result<Vec<SpecReadme>> {
         spec: "storagedatalake".to_owned(),
         readme: io::join(SPEC_FOLDER, "storage/data-plane/Microsoft.StorageDataLake/readme.md")?,
     });
+
+    // neither do search data-plane specs
+    readmes.push(SpecReadme {
+        spec: "search".to_owned(),
+        readme: io::join(SPEC_FOLDER, "search/data-plane/Azure.Search/readme.md")?,
+    });
     Ok(readmes)
 }
 

@@ -281,6 +281,7 @@ members = [
   "svc/quantum",
   "svc/queuestorage",
   "svc/schemaregistry",
+  "svc/search",
   "svc/securityinsights",
   "svc/servicefabric",
   "svc/storagedatalake",
