@@ -3,25 +3,29 @@
 #![allow(unused_imports)]
 #![allow(clippy::redundant_clone)]
 pub mod models;
+pub mod search_extensions;
+
 #[derive(Clone)]
 pub struct Client {
     endpoint: azure_core::Url,
-    credential: std::sync::Arc<dyn azure_core::auth::TokenCredential>,
+    credential: SearchAuthenticationMethod,
     scopes: Vec<String>,
     pipeline: azure_core::Pipeline,
 }
 #[derive(Clone)]
 pub struct ClientBuilder {
-    credential: std::sync::Arc<dyn azure_core::auth::TokenCredential>,
+    credential: SearchAuthenticationMethod,
     endpoint: Option<azure_core::Url>,
     scopes: Option<Vec<String>>,
     options: azure_core::ClientOptions,
 }
 pub use azure_core::resource_manager_endpoint::AZURE_PUBLIC_CLOUD as DEFAULT_ENDPOINT;
+
+use self::search_extensions::SearchAuthenticationMethod;
 impl ClientBuilder {
     #[doc = "Create a new instance of `ClientBuilder`."]
     #[must_use]
-    pub fn new(credential: std::sync::Arc<dyn azure_core::auth::TokenCredential>) -> Self {
+    pub fn new(credential: SearchAuthenticationMethod) -> Self {
         Self {
             credential,
             endpoint: None,
@@ -65,17 +69,17 @@ impl ClientBuilder {
     }
 }
 impl Client {
-    pub(crate) async fn bearer_token(&self) -> azure_core::Result<azure_core::auth::Secret> {
-        let credential = self.token_credential();
-        let response = credential.get_token(&self.scopes()).await?;
-        Ok(response.token)
-    }
+    // pub(crate) async fn bearer_token(&self) -> azure_core::Result<azure_core::auth::Secret> {
+    //     let credential = self.token_credential();
+    //     let response = credential.get_token(&self.scopes()).await?;
+    //     Ok(response.token)
+    // }
     pub(crate) fn endpoint(&self) -> &azure_core::Url {
         &self.endpoint
     }
-    pub(crate) fn token_credential(&self) -> &dyn azure_core::auth::TokenCredential {
-        self.credential.as_ref()
-    }
+    // pub(crate) fn token_credential(&self) -> &dyn azure_core::auth::TokenCredential {
+    //     self.credential.as_ref()
+    // }
     pub(crate) fn scopes(&self) -> Vec<&str> {
         self.scopes.iter().map(String::as_str).collect()
     }
@@ -85,14 +89,14 @@ impl Client {
     }
     #[doc = "Create a new `ClientBuilder`."]
     #[must_use]
-    pub fn builder(credential: std::sync::Arc<dyn azure_core::auth::TokenCredential>) -> ClientBuilder {
+    pub fn builder(credential: SearchAuthenticationMethod) -> ClientBuilder {
         ClientBuilder::new(credential)
     }
     #[doc = "Create a new `Client`."]
     #[must_use]
     pub fn new(
         endpoint: impl Into<azure_core::Url>,
-        credential: std::sync::Arc<dyn azure_core::auth::TokenCredential>,
+        credential: SearchAuthenticationMethod,
         scopes: Vec<String>,
         options: azure_core::ClientOptions,
     ) -> Self {
@@ -331,8 +335,12 @@ pub mod documents {
                     async move {
                         let url = this.url()?;
                         let mut req = azure_core::Request::new(url, azure_core::Method::Get);
-                        let bearer_token = this.client.bearer_token().await?;
-                        req.insert_header(azure_core::headers::AUTHORIZATION, format!("Bearer {}", bearer_token.secret()));
+                        crate::package_2023_11_searchindex::search_extensions::add_auth_header(
+                            &mut req,
+                            &self.client.credential,
+                            &self.client.scopes(),
+                        )
+                        .await?;
                         if let Some(x_ms_client_request_id) = &this.x_ms_client_request_id {
                             req.insert_header("x-ms-client-request-id", x_ms_client_request_id);
                         }
@@ -579,8 +587,12 @@ pub mod documents {
                     async move {
                         let url = this.url()?;
                         let mut req = azure_core::Request::new(url, azure_core::Method::Get);
-                        let bearer_token = this.client.bearer_token().await?;
-                        req.insert_header(azure_core::headers::AUTHORIZATION, format!("Bearer {}", bearer_token.secret()));
+                        crate::package_2023_11_searchindex::search_extensions::add_auth_header(
+                            &mut req,
+                            &self.client.credential,
+                            &self.client.scopes(),
+                        )
+                        .await?;
                         if let Some(search) = &this.search {
                             req.url_mut().query_pairs_mut().append_pair("search", search);
                         }
@@ -754,8 +766,12 @@ pub mod documents {
                     async move {
                         let url = this.url()?;
                         let mut req = azure_core::Request::new(url, azure_core::Method::Post);
-                        let bearer_token = this.client.bearer_token().await?;
-                        req.insert_header(azure_core::headers::AUTHORIZATION, format!("Bearer {}", bearer_token.secret()));
+                        crate::package_2023_11_searchindex::search_extensions::add_auth_header(
+                            &mut req,
+                            &self.client.credential,
+                            &self.client.scopes(),
+                        )
+                        .await?;
                         req.insert_header("content-type", "application/json");
                         let req_body = azure_core::to_json(&this.search_request)?;
                         if let Some(x_ms_client_request_id) = &this.x_ms_client_request_id {
@@ -866,8 +882,12 @@ pub mod documents {
                     async move {
                         let url = this.url()?;
                         let mut req = azure_core::Request::new(url, azure_core::Method::Get);
-                        let bearer_token = this.client.bearer_token().await?;
-                        req.insert_header(azure_core::headers::AUTHORIZATION, format!("Bearer {}", bearer_token.secret()));
+                        crate::package_2023_11_searchindex::search_extensions::add_auth_header(
+                            &mut req,
+                            &self.client.credential,
+                            &self.client.scopes(),
+                        )
+                        .await?;
                         if let Some(x_ms_client_request_id) = &this.x_ms_client_request_id {
                             req.insert_header("x-ms-client-request-id", x_ms_client_request_id);
                         }
@@ -1026,8 +1046,12 @@ pub mod documents {
                     async move {
                         let url = this.url()?;
                         let mut req = azure_core::Request::new(url, azure_core::Method::Get);
-                        let bearer_token = this.client.bearer_token().await?;
-                        req.insert_header(azure_core::headers::AUTHORIZATION, format!("Bearer {}", bearer_token.secret()));
+                        crate::package_2023_11_searchindex::search_extensions::add_auth_header(
+                            &mut req,
+                            &self.client.credential,
+                            &self.client.scopes(),
+                        )
+                        .await?;
                         let search = &this.search;
                         req.url_mut().query_pairs_mut().append_pair("search", search);
                         let suggester_name = &this.suggester_name;
@@ -1155,8 +1179,12 @@ pub mod documents {
                     async move {
                         let url = this.url()?;
                         let mut req = azure_core::Request::new(url, azure_core::Method::Post);
-                        let bearer_token = this.client.bearer_token().await?;
-                        req.insert_header(azure_core::headers::AUTHORIZATION, format!("Bearer {}", bearer_token.secret()));
+                        crate::package_2023_11_searchindex::search_extensions::add_auth_header(
+                            &mut req,
+                            &self.client.credential,
+                            &self.client.scopes(),
+                        )
+                        .await?;
                         req.insert_header("content-type", "application/json");
                         let req_body = azure_core::to_json(&this.suggest_request)?;
                         if let Some(x_ms_client_request_id) = &this.x_ms_client_request_id {
@@ -1261,8 +1289,12 @@ pub mod documents {
                     async move {
                         let url = this.url()?;
                         let mut req = azure_core::Request::new(url, azure_core::Method::Post);
-                        let bearer_token = this.client.bearer_token().await?;
-                        req.insert_header(azure_core::headers::AUTHORIZATION, format!("Bearer {}", bearer_token.secret()));
+                        crate::package_2023_11_searchindex::search_extensions::add_auth_header(
+                            &mut req,
+                            &self.client.credential,
+                            &self.client.scopes(),
+                        )
+                        .await?;
                         req.insert_header("content-type", "application/json");
                         let req_body = azure_core::to_json(&this.batch)?;
                         if let Some(x_ms_client_request_id) = &this.x_ms_client_request_id {
@@ -1416,8 +1448,12 @@ pub mod documents {
                     async move {
                         let url = this.url()?;
                         let mut req = azure_core::Request::new(url, azure_core::Method::Get);
-                        let bearer_token = this.client.bearer_token().await?;
-                        req.insert_header(azure_core::headers::AUTHORIZATION, format!("Bearer {}", bearer_token.secret()));
+                        crate::package_2023_11_searchindex::search_extensions::add_auth_header(
+                            &mut req,
+                            &self.client.credential,
+                            &self.client.scopes(),
+                        )
+                        .await?;
                         if let Some(x_ms_client_request_id) = &this.x_ms_client_request_id {
                             req.insert_header("x-ms-client-request-id", x_ms_client_request_id);
                         }
@@ -1548,8 +1584,12 @@ pub mod documents {
                     async move {
                         let url = this.url()?;
                         let mut req = azure_core::Request::new(url, azure_core::Method::Post);
-                        let bearer_token = this.client.bearer_token().await?;
-                        req.insert_header(azure_core::headers::AUTHORIZATION, format!("Bearer {}", bearer_token.secret()));
+                        crate::package_2023_11_searchindex::search_extensions::add_auth_header(
+                            &mut req,
+                            &self.client.credential,
+                            &self.client.scopes(),
+                        )
+                        .await?;
                         if let Some(x_ms_client_request_id) = &this.x_ms_client_request_id {
                             req.insert_header("x-ms-client-request-id", x_ms_client_request_id);
                         }
