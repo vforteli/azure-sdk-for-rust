@@ -1,6 +1,6 @@
 #![allow(non_camel_case_types)]
 #![allow(unused_imports)]
-use serde::de::{value, Deserializer, IntoDeserializer};
+use serde::de::{value, DeserializeOwned, Deserializer, IntoDeserializer};
 use serde::{Deserialize, Serialize, Serializer};
 use std::str::FromStr;
 #[doc = "An answer is a text passage extracted from the contents of the most relevant documents that matched the query. Answers are extracted from the top search results. Answer candidates are scored and the top answers are selected."]
@@ -333,7 +333,7 @@ pub enum ScoringStatistics {
 }
 #[doc = "Response containing search results from an index."]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct SearchDocumentsResult {
+pub struct SearchDocumentsResult<TIndex> {
     #[doc = "The total count of results found by the search operation, or null if the count was not requested. If present, the count may be greater than the number of results in this response. This can happen if you use the $top or $skip parameters, or if the query can't return all the requested documents in a single response."]
     #[serde(rename = "@odata.count", default, skip_serializing_if = "Option::is_none")]
     pub odata_count: Option<i64>,
@@ -355,7 +355,7 @@ pub struct SearchDocumentsResult {
     #[serde(rename = "@search.nextPageParameters", default, skip_serializing_if = "Option::is_none")]
     pub search_next_page_parameters: Option<SearchRequest>,
     #[doc = "The sequence of results returned by the query."]
-    pub value: Vec<SearchResult>,
+    pub value: Vec<SearchResult<TIndex>>,
     #[doc = "Continuation URL returned when the query can't return all the requested results in a single response. You can use this URL to formulate another GET or POST Search request to get the next part of the search response. Make sure to use the same verb (GET or POST) as the request that produced this response."]
     #[serde(rename = "@odata.nextLink", default, skip_serializing_if = "Option::is_none")]
     pub odata_next_link: Option<String>,
@@ -366,8 +366,8 @@ pub struct SearchDocumentsResult {
     #[serde(rename = "@search.semanticPartialResponseType", default, skip_serializing_if = "Option::is_none")]
     pub search_semantic_partial_response_type: Option<SemanticPartialResponseType>,
 }
-impl SearchDocumentsResult {
-    pub fn new(value: Vec<SearchResult>) -> Self {
+impl<TIndex> SearchDocumentsResult<TIndex> {
+    pub fn new(value: Vec<SearchResult<TIndex>>) -> Self {
         Self {
             odata_count: None,
             search_coverage: None,
@@ -516,20 +516,9 @@ impl SearchRequest {
     }
 }
 
-// todo move this out of here and make generic...
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct IndexModelTest {
-    pub numbervalue: Option<i32>,
-
-    pub stringvalue: Option<String>,
-    #[serde(rename = "pathUrlEncoded")]
-    pub path_url_encoded: Option<String>,
-}
-
-// todo hohum, this should probably be a trait instead
 #[doc = "Contains a document found by a search query, plus associated metadata."]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct SearchResult {
+pub struct SearchResult<TIndex> {
     #[doc = "The relevance score of the document compared to other documents returned by the query."]
     #[serde(rename = "@search.score")]
     pub search_score: f64,
@@ -548,11 +537,10 @@ pub struct SearchResult {
     )]
     pub search_captions: Vec<CaptionResult>,
 
-    // todo uh..
     #[serde(flatten)]
-    pub index_model: Option<IndexModelTest>,
+    pub index_model: Option<TIndex>,
 }
-impl SearchResult {
+impl<TIndex> SearchResult<TIndex> {
     pub fn new(search_score: f64) -> Self {
         Self {
             search_score,

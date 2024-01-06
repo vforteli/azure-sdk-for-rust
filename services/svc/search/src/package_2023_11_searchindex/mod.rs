@@ -120,11 +120,14 @@ impl Client {
     }
 }
 pub mod documents {
+    use std::marker::PhantomData;
+
     use super::models;
     #[cfg(not(target_arch = "wasm32"))]
     use futures::future::BoxFuture;
     #[cfg(target_arch = "wasm32")]
     use futures::future::LocalBoxFuture as BoxFuture;
+    use serde::de::DeserializeOwned;
     pub struct Client(pub(crate) super::Client);
     impl Client {
         #[doc = "Queries the number of documents in the index."]
@@ -135,7 +138,7 @@ pub mod documents {
             }
         }
         #[doc = "Searches for documents in the index."]
-        pub fn search_get(&self) -> search_get::RequestBuilder {
+        pub fn search_get<TIndex: Clone + std::marker::Send + DeserializeOwned>(&self) -> search_get::RequestBuilder<TIndex> {
             search_get::RequestBuilder {
                 client: self.0.clone(),
                 search: None,
@@ -163,17 +166,22 @@ pub mod documents {
                 semantic_max_wait_in_milliseconds: None,
                 answers: None,
                 captions: None,
+                phantom: PhantomData,
             }
         }
         #[doc = "Searches for documents in the index."]
         #[doc = ""]
         #[doc = "Arguments:"]
         #[doc = "* `search_request`: The definition of the Search request."]
-        pub fn search_post(&self, search_request: impl Into<models::SearchRequest>) -> search_post::RequestBuilder {
+        pub fn search_post<TIndex: Clone + std::marker::Send + DeserializeOwned>(
+            &self,
+            search_request: impl Into<models::SearchRequest>,
+        ) -> search_post::RequestBuilder<TIndex> {
             search_post::RequestBuilder {
                 client: self.0.clone(),
                 search_request: search_request.into(),
                 x_ms_client_request_id: None,
+                phantom: PhantomData,
             }
         }
         #[doc = "Retrieves a document from the index."]
@@ -374,17 +382,20 @@ pub mod documents {
         }
     }
     pub mod search_get {
+        use std::marker::PhantomData;
+
         use super::models;
         #[cfg(not(target_arch = "wasm32"))]
         use futures::future::BoxFuture;
         #[cfg(target_arch = "wasm32")]
         use futures::future::LocalBoxFuture as BoxFuture;
+        use serde::{de::DeserializeOwned, Deserialize};
         #[derive(Debug)]
         pub struct Response(azure_core::Response);
         impl Response {
-            pub async fn into_body(self) -> azure_core::Result<models::SearchDocumentsResult> {
+            pub async fn into_body<TIndex: DeserializeOwned>(self) -> azure_core::Result<models::SearchDocumentsResult<TIndex>> {
                 let bytes = self.0.into_body().collect().await?;
-                let body: models::SearchDocumentsResult = serde_json::from_slice(&bytes)?;
+                let body: models::SearchDocumentsResult<TIndex> = serde_json::from_slice(&bytes)?;
                 Ok(body)
             }
             pub fn into_raw_response(self) -> azure_core::Response {
@@ -423,7 +434,7 @@ pub mod documents {
         #[doc = r" can finalize the request using the"]
         #[doc = r" [`RequestBuilder::send()`] method which returns a future"]
         #[doc = r" that resolves to a lower-level [`Response`] value."]
-        pub struct RequestBuilder {
+        pub struct RequestBuilder<TIndex: Clone + std::marker::Send + DeserializeOwned> {
             pub(crate) client: super::super::Client,
             pub(crate) search: Option<String>,
             pub(crate) count: Option<bool>,
@@ -450,8 +461,9 @@ pub mod documents {
             pub(crate) semantic_max_wait_in_milliseconds: Option<i32>,
             pub(crate) answers: Option<String>,
             pub(crate) captions: Option<String>,
+            pub(crate) phantom: PhantomData<TIndex>,
         }
-        impl RequestBuilder {
+        impl<TIndex: Clone + std::marker::Send + DeserializeOwned + 'static> RequestBuilder<TIndex> {
             #[doc = "A full-text search query expression; Use \"*\" or omit this parameter to match all documents."]
             pub fn search(mut self, search: impl Into<String>) -> Self {
                 self.search = Some(search.into());
@@ -682,9 +694,9 @@ pub mod documents {
                 Ok(url)
             }
         }
-        impl std::future::IntoFuture for RequestBuilder {
-            type Output = azure_core::Result<models::SearchDocumentsResult>;
-            type IntoFuture = BoxFuture<'static, azure_core::Result<models::SearchDocumentsResult>>;
+        impl<TIndex: DeserializeOwned + std::marker::Send + Clone + 'static> std::future::IntoFuture for RequestBuilder<TIndex> {
+            type Output = azure_core::Result<models::SearchDocumentsResult<TIndex>>;
+            type IntoFuture = BoxFuture<'static, azure_core::Result<models::SearchDocumentsResult<TIndex>>>;
             #[doc = "Returns a future that sends the request and returns the parsed response body."]
             #[doc = ""]
             #[doc = "You should not normally call this method directly, simply invoke `.await` which implicitly calls `IntoFuture::into_future`."]
@@ -696,17 +708,20 @@ pub mod documents {
         }
     }
     pub mod search_post {
+        use std::marker::PhantomData;
+
         use super::models;
         #[cfg(not(target_arch = "wasm32"))]
         use futures::future::BoxFuture;
         #[cfg(target_arch = "wasm32")]
         use futures::future::LocalBoxFuture as BoxFuture;
+        use serde::de::DeserializeOwned;
         #[derive(Debug)]
         pub struct Response(azure_core::Response);
         impl Response {
-            pub async fn into_body(self) -> azure_core::Result<models::SearchDocumentsResult> {
+            pub async fn into_body<TIndex: DeserializeOwned>(self) -> azure_core::Result<models::SearchDocumentsResult<TIndex>> {
                 let bytes = self.0.into_body().collect().await?;
-                let body: models::SearchDocumentsResult = serde_json::from_slice(&bytes)?;
+                let body: models::SearchDocumentsResult<TIndex> = serde_json::from_slice(&bytes)?;
                 Ok(body)
             }
             pub fn into_raw_response(self) -> azure_core::Response {
@@ -745,12 +760,13 @@ pub mod documents {
         #[doc = r" can finalize the request using the"]
         #[doc = r" [`RequestBuilder::send()`] method which returns a future"]
         #[doc = r" that resolves to a lower-level [`Response`] value."]
-        pub struct RequestBuilder {
+        pub struct RequestBuilder<TIndex: Clone + std::marker::Send + DeserializeOwned> {
             pub(crate) client: super::super::Client,
             pub(crate) search_request: models::SearchRequest,
             pub(crate) x_ms_client_request_id: Option<String>,
+            pub(crate) phantom: PhantomData<TIndex>,
         }
-        impl RequestBuilder {
+        impl<TIndex: Clone + std::marker::Send + DeserializeOwned + 'static> RequestBuilder<TIndex> {
             #[doc = "The tracking ID sent with the request to help with debugging."]
             pub fn x_ms_client_request_id(mut self, x_ms_client_request_id: impl Into<String>) -> Self {
                 self.x_ms_client_request_id = Some(x_ms_client_request_id.into());
@@ -792,9 +808,9 @@ pub mod documents {
                 Ok(url)
             }
         }
-        impl std::future::IntoFuture for RequestBuilder {
-            type Output = azure_core::Result<models::SearchDocumentsResult>;
-            type IntoFuture = BoxFuture<'static, azure_core::Result<models::SearchDocumentsResult>>;
+        impl<TIndex: Clone + std::marker::Send + DeserializeOwned + 'static> std::future::IntoFuture for RequestBuilder<TIndex> {
+            type Output = azure_core::Result<models::SearchDocumentsResult<TIndex>>;
+            type IntoFuture = BoxFuture<'static, azure_core::Result<models::SearchDocumentsResult<TIndex>>>;
             #[doc = "Returns a future that sends the request and returns the parsed response body."]
             #[doc = ""]
             #[doc = "You should not normally call this method directly, simply invoke `.await` which implicitly calls `IntoFuture::into_future`."]
