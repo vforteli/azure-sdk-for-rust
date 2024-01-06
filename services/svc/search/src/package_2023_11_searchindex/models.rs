@@ -515,6 +515,18 @@ impl SearchRequest {
         Self::default()
     }
 }
+
+// todo move this out of here and make generic...
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct IndexModelTest {
+    pub numbervalue: Option<i32>,
+
+    pub stringvalue: Option<String>,
+    #[serde(rename = "pathUrlEncoded")]
+    pub path_url_encoded: Option<String>,
+}
+
+// todo hohum, this should probably be a trait instead
 #[doc = "Contains a document found by a search query, plus associated metadata."]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SearchResult {
@@ -535,6 +547,10 @@ pub struct SearchResult {
         skip_serializing_if = "Vec::is_empty"
     )]
     pub search_captions: Vec<CaptionResult>,
+
+    // todo uh..
+    #[serde(flatten)]
+    pub index_model: Option<IndexModelTest>,
 }
 impl SearchResult {
     pub fn new(search_score: f64) -> Self {
@@ -543,6 +559,9 @@ impl SearchResult {
             search_reranker_score: None,
             search_highlights: None,
             search_captions: Vec::new(),
+
+            // todo uh..
+            index_model: None,
         }
     }
 }
