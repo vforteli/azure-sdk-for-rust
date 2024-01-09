@@ -221,39 +221,41 @@ impl FacetResult {
 }
 #[doc = "Represents an index action that operates on a document."]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
-pub struct IndexAction {
+pub struct IndexAction<TIndex> {
     #[doc = "The operation to perform on a document in an indexing batch."]
     #[serde(rename = "@search.action", default, skip_serializing_if = "Option::is_none")]
-    pub search_action: Option<index_action::SearchAction>,
+    pub search_action: Option<index_action::SearchAction<TIndex>>,
 }
-impl IndexAction {
-    pub fn new() -> Self {
-        Self::default()
+impl<TIndex> IndexAction<TIndex> {
+    pub fn new(action: index_action::SearchAction<TIndex>) -> Self {
+        Self {
+            search_action: Some(action),
+        }
     }
 }
 pub mod index_action {
     use super::*;
     #[doc = "The operation to perform on a document in an indexing batch."]
     #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-    pub enum SearchAction {
+    pub enum SearchAction<TIndex> {
         #[serde(rename = "upload")]
         Upload,
         #[serde(rename = "merge")]
         Merge,
         #[serde(rename = "mergeOrUpload")]
-        MergeOrUpload,
+        MergeOrUpload(TIndex),
         #[serde(rename = "delete")]
         Delete,
     }
 }
 #[doc = "Contains a batch of document write actions to send to the index."]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct IndexBatch {
+pub struct IndexBatch<TIndex: Clone + Serialize + Send + Default> {
     #[doc = "The actions in the batch."]
-    pub value: Vec<IndexAction>,
+    pub value: Vec<IndexAction<TIndex>>,
 }
-impl IndexBatch {
-    pub fn new(value: Vec<IndexAction>) -> Self {
+impl<TIndex: Clone + Serialize + Send + Default> IndexBatch<TIndex> {
+    pub fn new(value: Vec<IndexAction<TIndex>>) -> Self {
         Self { value }
     }
 }

@@ -127,7 +127,7 @@ pub mod documents {
     use futures::future::BoxFuture;
     #[cfg(target_arch = "wasm32")]
     use futures::future::LocalBoxFuture as BoxFuture;
-    use serde::de::DeserializeOwned;
+    use serde::{de::DeserializeOwned, Serialize};
     pub struct Client(pub(crate) super::Client);
     impl Client {
         #[doc = "Queries the number of documents in the index."]
@@ -233,7 +233,10 @@ pub mod documents {
         #[doc = ""]
         #[doc = "Arguments:"]
         #[doc = "* `batch`: The batch of index actions."]
-        pub fn index(&self, batch: impl Into<models::IndexBatch>) -> index::RequestBuilder {
+        pub fn index<TIndex: Clone + Serialize + Send + Default>(
+            &self,
+            batch: impl Into<models::IndexBatch<TIndex>>,
+        ) -> index::RequestBuilder<TIndex> {
             index::RequestBuilder {
                 client: self.0.clone(),
                 batch: batch.into(),
@@ -1240,6 +1243,7 @@ pub mod documents {
         use futures::future::BoxFuture;
         #[cfg(target_arch = "wasm32")]
         use futures::future::LocalBoxFuture as BoxFuture;
+        use serde::Serialize;
         #[derive(Debug)]
         pub struct Response(azure_core::Response);
         impl Response {
@@ -1284,12 +1288,12 @@ pub mod documents {
         #[doc = r" can finalize the request using the"]
         #[doc = r" [`RequestBuilder::send()`] method which returns a future"]
         #[doc = r" that resolves to a lower-level [`Response`] value."]
-        pub struct RequestBuilder {
+        pub struct RequestBuilder<TIndex: Clone + Serialize + Send + Default> {
             pub(crate) client: super::super::Client,
-            pub(crate) batch: models::IndexBatch,
+            pub(crate) batch: models::IndexBatch<TIndex>,
             pub(crate) x_ms_client_request_id: Option<String>,
         }
-        impl RequestBuilder {
+        impl<TIndex: Clone + Serialize + Send + Default + 'static> RequestBuilder<TIndex> {
             #[doc = "The tracking ID sent with the request to help with debugging."]
             pub fn x_ms_client_request_id(mut self, x_ms_client_request_id: impl Into<String>) -> Self {
                 self.x_ms_client_request_id = Some(x_ms_client_request_id.into());
@@ -1331,7 +1335,7 @@ pub mod documents {
                 Ok(url)
             }
         }
-        impl std::future::IntoFuture for RequestBuilder {
+        impl<TIndex: Clone + Serialize + Send + Default + 'static> std::future::IntoFuture for RequestBuilder<TIndex> {
             type Output = azure_core::Result<models::IndexDocumentsResult>;
             type IntoFuture = BoxFuture<'static, azure_core::Result<models::IndexDocumentsResult>>;
             #[doc = "Returns a future that sends the request and returns the parsed response body."]
