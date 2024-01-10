@@ -13,7 +13,8 @@ operation! {
     client: CollectionClient,
     ?if_match_condition: IfMatchCondition,
     ?max_item_count: MaxItemCount,
-    ?consistency_level: ConsistencyLevel
+    ?consistency_level: ConsistencyLevel,
+    ?continuation: Continuation,
 }
 
 impl ListTriggersBuilder {
@@ -37,6 +38,7 @@ impl ListTriggersBuilder {
                 }
                 request.insert_headers(&this.max_item_count.unwrap_or_default());
 
+                let continuation = continuation.or(this.continuation);
                 request.insert_headers(&continuation);
 
                 let response = this
@@ -100,7 +102,7 @@ impl ListTriggersResponse {
         let response: Response = body.json().await?;
 
         Ok(Self {
-            rid: response.rid.to_owned(),
+            rid: response.rid.clone(),
             triggers: response.triggers,
             content_location: content_location_from_headers(&headers)?,
             server: server_from_headers(&headers)?,
