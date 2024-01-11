@@ -3,6 +3,8 @@
 use serde::de::{value, DeserializeOwned, Deserializer, IntoDeserializer};
 use serde::{Deserialize, Serialize, Serializer};
 use std::str::FromStr;
+
+use super::documents;
 #[doc = "An answer is a text passage extracted from the contents of the most relevant documents that matched the query. Answers are extracted from the top search results. Answer candidates are scored and the top answers are selected."]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
 pub struct AnswerResult {
@@ -224,12 +226,17 @@ impl FacetResult {
 pub struct IndexAction<TIndex> {
     #[doc = "The operation to perform on a document in an indexing batch."]
     #[serde(rename = "@search.action", default, skip_serializing_if = "Option::is_none")]
-    pub search_action: Option<index_action::SearchAction<TIndex>>,
+    pub search_action: Option<index_action::SearchAction>,
+
+    // todo this is not ideal... would really like to have this in the enum variant, maybe with custom serialization
+    #[serde(flatten)]
+    pub document: Option<TIndex>,
 }
 impl<TIndex> IndexAction<TIndex> {
-    pub fn new(action: index_action::SearchAction<TIndex>) -> Self {
+    pub fn new(action: index_action::SearchAction, document: Option<TIndex>) -> Self {
         Self {
             search_action: Some(action),
+            document,
         }
     }
 }
@@ -237,13 +244,13 @@ pub mod index_action {
     use super::*;
     #[doc = "The operation to perform on a document in an indexing batch."]
     #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-    pub enum SearchAction<TIndex> {
+    pub enum SearchAction {
         #[serde(rename = "upload")]
         Upload,
         #[serde(rename = "merge")]
         Merge,
         #[serde(rename = "mergeOrUpload")]
-        MergeOrUpload(TIndex),
+        MergeOrUpload,
         #[serde(rename = "delete")]
         Delete,
     }
